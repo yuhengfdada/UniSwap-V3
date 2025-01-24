@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+pragma solidity ^0.8.14;
 
 import {Tick} from "./libs/Tick.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -46,7 +47,8 @@ contract UniswapV3Pool {
         // update states
         Position.Info storage position = positions.get(owner, lowerTick, upperTick);
         position.update(amount);
-        ticks.update(lowerTick, upperTick, amount);
+        ticks.update(lowerTick, amount);
+        ticks.update(upperTick, amount);
         totalLiquidity += uint128(amount);
 
         // calc delta x, delta y
@@ -60,6 +62,14 @@ contract UniswapV3Pool {
         require(balance1Before + amount1 <= balance1(), "M1");
 
         // emit Mint(...)
+    }
+
+    function calculateLiquidity(int24 lowerTick, int24 upperTick, uint128 amount)
+        internal
+        returns (uint256 amount0, uint256 amount1)
+    {
+        amount0 = 0.99897661834742528 ether;
+        amount1 = 5000 ether;
     }
 
     function balance0() internal returns (uint256 balance) {

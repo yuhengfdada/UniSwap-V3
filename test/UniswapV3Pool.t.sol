@@ -27,49 +27,11 @@ contract TestUniswapV3Pool is Test, IUniswapV3MintCallback, IUniswapV3SwapCallba
     address token1Addr;
     UniswapV3Pool pool;
 
-    function uniswapV3MintCallback(uint256 amount0, uint256 amount1, bytes calldata data) external override {
-        console.log("MintCallback: amount0: %d, amount1: %d", amount0, amount1);
-        UniswapV3Pool.CallbackData memory callbackData = abi.decode(data, (UniswapV3Pool.CallbackData));
-        IERC20(callbackData.token0).transferFrom(callbackData.payer, msg.sender, amount0);
-        IERC20(callbackData.token1).transferFrom(callbackData.payer, msg.sender, amount1);
-    }
-
-    function uniswapV3SwapCallback(int256 amount0, int256 amount1, bytes calldata data) external override {
-        console.log("SwapCallback");
-        console.logInt(amount0);
-        console.logInt(amount1);
-        UniswapV3Pool.CallbackData memory callbackData = abi.decode(data, (UniswapV3Pool.CallbackData));
-
-        if (amount0 > 0) IERC20(callbackData.token0).transferFrom(callbackData.payer, msg.sender, uint256(amount0));
-        if (amount1 > 0) IERC20(callbackData.token1).transferFrom(callbackData.payer, msg.sender, uint256(amount1));
-    }
-
     function setUp() public {
         token0 = new Token("TokenX", "X", 0);
         token1 = new Token("TokenY", "Y", 0);
         token0Addr = address(token0);
         token1Addr = address(token1);
-    }
-
-    function setupTestCase(TestCaseParams memory params) internal {
-        token0.mint(address(this), params.wethBalance);
-        token1.mint(address(this), params.usdcBalance);
-
-        pool = new UniswapV3Pool(address(token0), address(token1), params.currentSqrtP, params.currentTick);
-    }
-
-    function setupTestCaseThenMint(TestCaseParams memory params) internal {
-        setupTestCase(params);
-        token0.approve(address(this), params.wethBalance);
-        token1.approve(address(this), params.usdcBalance);
-
-        (uint256 poolBalance0, uint256 poolBalance1) = pool.mint(
-            address(this),
-            params.lowerTick,
-            params.upperTick,
-            params.liquidity,
-            abi.encode(UniswapV3Pool.CallbackData(token0Addr, token1Addr, address(this)))
-        );
     }
 
     function testMint() public {
@@ -147,5 +109,46 @@ contract TestUniswapV3Pool is Test, IUniswapV3MintCallback, IUniswapV3SwapCallba
         assertEq(sqrtPriceX96, 5604469350942327889444743441197, "invalid current sqrtP");
         assertEq(tick, 85184, "invalid current tick");
         assertEq(pool.liquidity(), 1517882343751509868544, "invalid current liquidity");
+    }
+
+    /**
+     * UTILITIES FUNCTIONS
+     */
+    function setupTestCase(TestCaseParams memory params) internal {
+        token0.mint(address(this), params.wethBalance);
+        token1.mint(address(this), params.usdcBalance);
+
+        pool = new UniswapV3Pool(address(token0), address(token1), params.currentSqrtP, params.currentTick);
+    }
+
+    function setupTestCaseThenMint(TestCaseParams memory params) internal {
+        setupTestCase(params);
+        token0.approve(address(this), params.wethBalance);
+        token1.approve(address(this), params.usdcBalance);
+
+        (uint256 poolBalance0, uint256 poolBalance1) = pool.mint(
+            address(this),
+            params.lowerTick,
+            params.upperTick,
+            params.liquidity,
+            abi.encode(UniswapV3Pool.CallbackData(token0Addr, token1Addr, address(this)))
+        );
+    }
+
+    function uniswapV3MintCallback(uint256 amount0, uint256 amount1, bytes calldata data) external override {
+        console.log("MintCallback: amount0: %d, amount1: %d", amount0, amount1);
+        UniswapV3Pool.CallbackData memory callbackData = abi.decode(data, (UniswapV3Pool.CallbackData));
+        IERC20(callbackData.token0).transferFrom(callbackData.payer, msg.sender, amount0);
+        IERC20(callbackData.token1).transferFrom(callbackData.payer, msg.sender, amount1);
+    }
+
+    function uniswapV3SwapCallback(int256 amount0, int256 amount1, bytes calldata data) external override {
+        console.log("SwapCallback");
+        console.logInt(amount0);
+        console.logInt(amount1);
+        UniswapV3Pool.CallbackData memory callbackData = abi.decode(data, (UniswapV3Pool.CallbackData));
+
+        if (amount0 > 0) IERC20(callbackData.token0).transferFrom(callbackData.payer, msg.sender, uint256(amount0));
+        if (amount1 > 0) IERC20(callbackData.token1).transferFrom(callbackData.payer, msg.sender, uint256(amount1));
     }
 }

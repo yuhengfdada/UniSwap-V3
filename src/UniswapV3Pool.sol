@@ -5,8 +5,15 @@ import {Tick} from "./libs/Tick.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Position} from "./libs/Position.sol";
 import {IUniswapV3MintCallback} from "./interfaces/IUniswapV3MintCallback.sol";
+import {IUniswapV3SwapCallback} from "./interfaces/IUniswapV3SwapCallback.sol";
 
 contract UniswapV3Pool {
+    struct CallbackData {
+        address token0;
+        address token1;
+        address payer;
+    }
+
     error InsufficientInputAmount();
 
     using Position for mapping(bytes32 => Position.Info);
@@ -32,7 +39,7 @@ contract UniswapV3Pool {
     // bytes32 combines (owner address, lower tick, upper tick)
     mapping(bytes32 => Position.Info) positions;
 
-    uint128 totalLiquidity;
+    uint128 public liquidity;
 
     constructor(address _token0, address _token1, uint160 _sqrtPriceX96, int24 _tick) {
         token0 = _token0;
@@ -40,7 +47,7 @@ contract UniswapV3Pool {
         slot0 = Slot0({sqrtPriceX96: _sqrtPriceX96, tick: _tick});
     }
 
-    function mint(address owner, int24 lowerTick, int24 upperTick, uint128 amount)
+    function mint(address owner, int24 lowerTick, int24 upperTick, uint128 amount, bytes calldata data)
         external
         returns (uint256 amount0, uint256 amount1)
     {
@@ -49,14 +56,14 @@ contract UniswapV3Pool {
         position.update(amount);
         ticks.update(lowerTick, amount);
         ticks.update(upperTick, amount);
-        totalLiquidity += uint128(amount);
+        liquidity += uint128(amount);
 
         // calc delta x, delta y
         (amount0, amount1) = calculateLiquidity(lowerTick, upperTick, amount);
 
         // callback to collect tokens
         (uint256 balance0Before, uint256 balance1Before) = (balance0(), balance1());
-        IUniswapV3MintCallback(msg.sender).uniswapV3MintCallback(amount0, amount1);
+        IUniswapV3MintCallback(msg.sender).uniswapV3MintCallback(amount0, amount1, data);
 
         require(balance0Before + amount0 <= balance0(), "M0");
         require(balance1Before + amount1 <= balance1(), "M1");
@@ -72,11 +79,27 @@ contract UniswapV3Pool {
         amount1 = 5000 ether;
     }
 
-    function balance0() internal returns (uint256 balance) {
+    function balance0() internal view returns (uint256 balance) {
         balance = IERC20(token0).balanceOf(address(this));
     }
 
-    function balance1() internal returns (uint256 balance) {
+    function balance1() internal view returns (uint256 balance) {
         balance = IERC20(token1).balanceOf(address(this));
+    }
+
+    function swap(address to, bytes calldata data) public returns (int256 amount0, int256 amount1) {
+        int24 nextTick = 85184;
+        uint160 nextPrice = 5604469350942327889444743441197;
+
+        amount0 = -0.008396714242162444 ether;
+        amount1 = 42 ether;
+        (slot0.tick, slot0.sqrtPriceX96) = (nextTick, nextPrice);
+        IERC20(token0).transfer(to, uint256(-amount0));
+
+        uint256 balance1Before = balance1();
+        IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amount0, amount1, data);
+        if (balance1Before + uint256(amount1) > balance1()) {
+            revert("Insufficient input amount");
+        }
     }
 }

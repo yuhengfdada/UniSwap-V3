@@ -112,7 +112,7 @@ contract TestUniswapV3Pool is Test, IUniswapV3MintCallback, IUniswapV3SwapCallba
     }
 
     /**
-     * UTILITIES FUNCTIONS
+     * UTILITY FUNCTIONS **
      */
     function setupTestCase(TestCaseParams memory params) internal {
         token0.mint(address(this), params.wethBalance);

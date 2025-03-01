@@ -71,22 +71,6 @@ contract UniswapV3Pool {
         // emit Mint(...)
     }
 
-    function calculateLiquidity(int24 lowerTick, int24 upperTick, uint128 amount)
-        internal
-        returns (uint256 amount0, uint256 amount1)
-    {
-        amount0 = 0.99897661834742528 ether;
-        amount1 = 5000 ether;
-    }
-
-    function balance0() internal view returns (uint256 balance) {
-        balance = IERC20(token0).balanceOf(address(this));
-    }
-
-    function balance1() internal view returns (uint256 balance) {
-        balance = IERC20(token1).balanceOf(address(this));
-    }
-
     function swap(address to, bytes calldata data) public returns (int256 amount0, int256 amount1) {
         int24 nextTick = 85184;
         uint160 nextPrice = 5604469350942327889444743441197;
@@ -101,5 +85,24 @@ contract UniswapV3Pool {
         if (balance1Before + uint256(amount1) > balance1()) {
             revert("Insufficient input amount");
         }
+    }
+
+    /**
+     * UTILITY FUNCTIONS **
+     */
+    function calculateLiquidity(int24 lowerTick, int24 upperTick, uint128 amount)
+        internal
+        returns (uint256 amount0, uint256 amount1)
+    {
+        amount0 = 0.99897661834742528 ether;
+        amount1 = 5000 ether;
+    }
+
+    function balance0() internal view returns (uint256 balance) {
+        balance = IERC20(token0).balanceOf(address(this));
+    }
+
+    function balance1() internal view returns (uint256 balance) {
+        balance = IERC20(token1).balanceOf(address(this));
     }
 }

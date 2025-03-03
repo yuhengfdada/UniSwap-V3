@@ -7,13 +7,20 @@ library Tick {
         uint128 liquidity;
     }
 
-    // room for gas optimization
-    function update(mapping(int24 => Tick.Info) storage self, int24 tick, uint128 amount) public {
+    function update(mapping(int24 => Tick.Info) storage self, int24 tick, uint128 amount)
+        public
+        returns (bool flipped)
+    {
         Tick.Info storage info = self[tick];
+        uint128 liquidityBefore = info.liquidity;
 
         if (info.liquidity == 0) {
             info.initialized = true;
         }
         info.liquidity += amount;
+
+        uint128 liquidityAfter = info.liquidity;
+
+        return (liquidityBefore == 0) != (liquidityAfter == 0);
     }
 }

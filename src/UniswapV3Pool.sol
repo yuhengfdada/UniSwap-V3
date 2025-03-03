@@ -6,6 +6,8 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Position} from "./libs/Position.sol";
 import {IUniswapV3MintCallback} from "./interfaces/IUniswapV3MintCallback.sol";
 import {IUniswapV3SwapCallback} from "./interfaces/IUniswapV3SwapCallback.sol";
+import {Math} from "./libs/Math.sol";
+import {TickMath} from "./libs/TickMath.sol";
 
 contract UniswapV3Pool {
     struct CallbackData {
@@ -54,8 +56,8 @@ contract UniswapV3Pool {
         // update states
         Position.Info storage position = positions.get(owner, lowerTick, upperTick);
         position.update(amount);
-        ticks.update(lowerTick, amount);
-        ticks.update(upperTick, amount);
+        bool lowerFlipped = ticks.update(lowerTick, amount);
+        bool upperFlipped = ticks.update(upperTick, amount);
         liquidity += uint128(amount);
 
         // calc delta x, delta y
@@ -92,10 +94,15 @@ contract UniswapV3Pool {
      */
     function calculateLiquidity(int24 lowerTick, int24 upperTick, uint128 amount)
         internal
+        view
         returns (uint256 amount0, uint256 amount1)
     {
-        amount0 = 0.99897661834742528 ether;
-        amount1 = 5000 ether;
+        Slot0 memory currentSlot = slot0;
+
+        amount0 = Math.calcAmount0Delta(currentSlot.sqrtPriceX96, TickMath.getSqrtRatioAtTick(upperTick), amount, true);
+        amount1 = Math.calcAmount1Delta(currentSlot.sqrtPriceX96, TickMath.getSqrtRatioAtTick(lowerTick), amount, true);
+        // amount0 = 0.99897661834742528 ether;
+        // amount1 = 5000 ether;
     }
 
     function balance0() internal view returns (uint256 balance) {

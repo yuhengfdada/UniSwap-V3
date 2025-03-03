@@ -37,7 +37,7 @@ contract TestUniswapV3Pool is Test, IUniswapV3MintCallback, IUniswapV3SwapCallba
     function testMint() public {
         TestCaseParams memory params = TestCaseParams({
             wethBalance: 1 ether,
-            usdcBalance: 5000 ether,
+            usdcBalance: 5000.3 ether,
             currentTick: 85176,
             lowerTick: 84222,
             upperTick: 86129,
@@ -68,8 +68,8 @@ contract TestUniswapV3Pool is Test, IUniswapV3MintCallback, IUniswapV3SwapCallba
             abi.encode(UniswapV3Pool.CallbackData(token0Addr, token1Addr, mintCallerAddr))
         );
 
-        uint256 expectedAmount0 = 0.99897661834742528 ether;
-        uint256 expectedAmount1 = 5000 ether;
+        uint256 expectedAmount0 = 0.998628802115141959 ether;
+        uint256 expectedAmount1 = 5000.2091909204895241 ether;
 
         assertEq(poolBalance0, expectedAmount0);
         assertEq(poolBalance1, expectedAmount1);
@@ -80,7 +80,7 @@ contract TestUniswapV3Pool is Test, IUniswapV3MintCallback, IUniswapV3SwapCallba
     function testSwapBuyEth() public {
         TestCaseParams memory params = TestCaseParams({
             wethBalance: 1 ether,
-            usdcBalance: 5000 ether,
+            usdcBalance: 5000.3 ether,
             currentTick: 85176,
             lowerTick: 84222,
             upperTick: 86129,
